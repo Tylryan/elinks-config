@@ -1,0 +1,83 @@
+#!/usr/bin/bash
+
+# A script Searches the web from your terminal using Elinks
+
+#TODO When splitting ARGS, it doesn't actually split at all
+EXIT_SUCCESS=0
+EXIT_FAILURE=1
+PROGRAM_NAME=$(echo $0 | tr '/' '\n' | tail -n1)
+ARGS=$@
+ARGS_IF_FLAG=""
+FLAG=$1
+SEARCH_TERMS=$(echo $ARGS | tr ' ' '+')
+SEARCH_ENGINE="duckduckgo.com"
+SEARCH_LINGO="/?q="
+YELLOW='\033[1;33m'
+RED='\031[1;33m'
+NO_COLOR='\033[0m'
+
+
+elinks_search(){
+    check_flags                      # Check if they entered any flags
+    check_is_url_search              # Check if they entered in a URL
+    search_url=$SEARCH_ENGINE$SEARCH_LINGO$SEARCH_TERMS  
+    elinks $search_url               # Else assume it's a general search
+
+    exit $EXIT_SUCCESS
+}
+
+check_is_url_search(){
+    # If there is a period in the flag, then they probably entered a URL
+    [[ $FLAG =~ "." ]] && elinks $FLAG && exit $EXIT_SUCCESS
+}
+
+display_help_message(){
+            echo -e "USAGE
+\t${YELLOW}$PROGRAM_NAME${NO_COLOR} [options] [website-url]
+\t${YELLOW}$PROGRAM_NAME${NO_COLOR} [options] [text-to-search]
+DESCRIPTION
+\tSearches the web from your terminal using Elinks
+OPTIONS
+\tNo Args is equivalent to running \"elinks\"
+\t--google \t-g\tUse Google's Search Engine (Default = Duckduckgo)
+\t--bing  \t-b\tUse Google's Search Engine (Default = Duckduckgo)
+\t--help  \t-h\tShows this message and quits
+EXAMPLES
+\t${YELLOW}$PROGRAM_NAME${NO_COLOR} stackoverflow.com 
+\t${YELLOW}$PROGRAM_NAME${NO_COLOR} how big is the moon
+\t${YELLOW}$PROGRAM_NAME${NO_COLOR} --google what does sand look like"
+
+}
+check_flags() {
+    case $FLAG in
+        -h | --help)
+            display_help_message
+        exit $EXIT_SUCCESS
+        ;;
+
+    -g | --google)
+        ARGS=(${@:3}) #TODO This piece of code doesn't actually do anything
+        SEARCH_ENGINE="google.com"
+        SEARCH_LINGO="/search?q="
+        ;;
+    -b | --bing)
+        ARGS=${@:3}
+        SEARCH_ENGINE="bing.com"
+        SEARCH_LINGO="/search?q="
+        ;;
+
+    "") 
+        elinks
+        exit $EXIT_SUCCESS
+        ;;
+
+    -*) # If they enter any other command, then display the help message
+        echo -e "${RED}Err: Invalid Option ($FLAG)${NO_COLOR}"
+        display_help_message
+        exit $EXIT_FAILURE
+        ;;
+
+    esac
+}
+
+elinks_search

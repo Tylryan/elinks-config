@@ -1,0 +1,166 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h> // EXIT_SUCCESS/EXIT_FAILURE
+#include <sysexits.h>
+#include <errno.h>
+
+#define TRUE 1
+#define FALSE 0
+
+// Pretty much never allowed to use constants.
+char YOUR_FAVORITE_BROWSER[] = "otter-browser ";
+char ELINKS_CONFIG_PATH[] = "-config-dir ~/.config/elinks ";
+
+typedef enum { duck, google } SearchEngine;
+
+// TODO split into Entry, Options, and something
+typedef struct {
+    char application_binary[50];
+    SearchEngine search_engine;
+    char * base_search;
+    int arg_num;
+    char ** args;
+    char search_terms[100];
+    char * flag;
+    int has_flag;
+    int use_gui;
+    char final_url[100];
+    char * elinks_config_path;
+} UserEntry;
+
+
+// ###################### FUNCTIONS DECLARATIONS #############################
+void print_help_message(char * PROGRAM_NAME);
+int contains_a_dot(char * string, int str_len);
+void base_elinks_url(UserEntry * user_search);
+void add_command_ending(UserEntry * user_entry);
+void print_help_message(char * program_name);
+void args_to_url(UserEntry * user_entry, int arg_index);
+int execute_or_print_error(char * command);
+void add_elinks_config(UserEntry * user_entry);
+// #######################  MAIN #############################################
+int main(int argc, char *argv[]){
+
+    char * PROGRAM_NAME = argv[0];
+    UserEntry user_entry;
+    user_entry.arg_num = argc;
+    user_entry.args = argv;
+    char * FLAG= argv[1];
+    user_entry.has_flag = 0;
+    user_entry.use_gui = 0;
+    user_entry.elinks_config_path = ELINKS_CONFIG_PATH;
+
+    // Default Elinks
+    strcpy(user_entry.application_binary,"elinks ");
+    user_entry.search_engine = duck;
+    user_entry.base_search = "duckduckgo.com/?q=";
+
+    // If no args entered, run "elinks"
+    if (argc == 1) {
+        /* add_command_ending(&user_entry); */
+        base_elinks_url(&user_entry);
+        add_command_ending(&user_entry);
+        execute_or_print_error(user_entry.final_url);
+        exit(EXIT_SUCCESS);
+    }
+
+    int needs_help = ((strcmp(FLAG, "-h") == 0) || (strcmp(FLAG, "--help") == 0));
+    int wants_gui_browser = ((strcmp(FLAG, "-o") == 0) || (strcmp(FLAG, "--otter") == 0));
+
+    if (needs_help){
+        print_help_message(PROGRAM_NAME);
+        exit(EXIT_SUCCESS);
+
+    } 
+    if (wants_gui_browser){
+        strcpy(user_entry.application_binary, YOUR_FAVORITE_BROWSER);
+        user_entry.has_flag = 1;
+        user_entry.use_gui = 1;
+    }
+
+
+    // If there is a "." in arg1, it's probably a url
+    int start_of_args = 1;
+    if ( user_entry.has_flag ) start_of_args = 2;
+    int is_complete_url = contains_a_dot(argv[start_of_args], strlen(argv[start_of_args]));
+    if (is_complete_url){
+        if (strlen(argv[start_of_args]) > 100){
+            printf("Your url  was too big");
+            exit(EXIT_FAILURE);
+        }
+        // TODO Otter can only search. Can't use url
+        strcat(user_entry.final_url,user_entry.application_binary);
+        // Will only add config if application chosen is elinks
+        add_elinks_config(&user_entry);
+        char * url=argv[start_of_args];
+        strcat(user_entry.final_url, url);
+        add_command_ending(&user_entry);
+        execute_or_print_error(user_entry.final_url);
+        exit(EXIT_SUCCESS);
+    }
+
+    else {
+        // Turning args into "arg1+arg2+arg3"
+        for (int i = 1; i < user_entry.arg_num; i++){
+            args_to_url(&user_entry, i);
+        }
+        strcat(user_entry.final_url, user_entry.application_binary);
+        add_elinks_config(&user_entry);
+        strcat(user_entry.final_url, user_entry.base_search);
+        strcat(user_entry.final_url, user_entry.search_terms);
+        strcat(user_entry.final_url, " 2>/dev/null");
+
+        execute_or_print_error(user_entry.final_url);
+        exit(EXIT_SUCCESS);
+        }
+
+    }
+
+// ###################### FUNCTION INSTANTIATION ##############################
+
+// Does the string contain a dot?
+int contains_a_dot(char * string, int str_len){
+    for (int i = 0; i < str_len; i++) 
+        if (string[i] == '.') return TRUE;
+    return FALSE;
+}
+
+// Boy this was a pain to figure out.
+// Must pass reference to change outside values, duh
+void base_elinks_url(UserEntry * user_entry){
+    strcpy(user_entry -> final_url, user_entry -> application_binary); 
+    strcat(user_entry -> final_url, user_entry -> elinks_config_path);
+}
+
+void add_command_ending(UserEntry * user_entry){
+    if (user_entry->use_gui == FALSE){
+        strcat(user_entry -> final_url, " 2>/dev/null");
+    }
+    else strcat(user_entry -> final_url, " 2>/dev/null &");
+}
+
+void print_help_message(char * program_name){
+        char help_command[30] = "bash bash/help_message.sh ";
+        strcat(help_command, program_name);
+        execute_or_print_error(help_command);
+}
+
+void args_to_url(UserEntry * user_entry, int arg_index){
+    if (user_entry -> has_flag) arg_index = 2;
+    strcat(user_entry -> search_terms, user_entry -> args[arg_index]);
+    // Don't add "+" to the last argument
+    if (arg_index != (user_entry -> arg_num -1)) strcat(user_entry -> search_terms, "+");
+
+}
+
+int execute_or_print_error(char * command){
+        int error;
+        if ((error = system(command) !=0)) 
+            strerror(errno);
+        return 0;
+}
+
+void add_elinks_config(UserEntry * user_entry){
+    int is_elinks = strcmp(user_entry -> application_binary, "elinks ");
+    if (is_elinks == 0) strcat(user_entry -> final_url, user_entry -> elinks_config_path);
+}

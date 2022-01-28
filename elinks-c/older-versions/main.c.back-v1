@@ -1,0 +1,103 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h> // EXIT_SUCCESS/EXIT_FAILURE
+#include <sysexits.h>
+
+#define TRUE 1
+#define FALSE 0
+
+// Pretty much never allowed to use constants.
+char YOUR_FAVORITE_BROWSER[] = "otter-browser ";
+
+// ###################### FUNCTIONS ##################################
+void print_help_message(char * PROGRAM_NAME);
+int contains_a_dot(char * string, int str_len);
+
+// #######################  MAIN ########################################
+int main(int argc, char *argv[]){
+
+    char * PROGRAM_NAME = argv[0];
+    char * FLAG= argv[1];
+
+    int has_flag = 0;
+    int using_gui = 0;
+
+    // This looks too big, but it won't work otherwise
+    char NAKED_ELINKS_COMMAND[250] = "elinks ";
+    char ELINKS_CONFIG_PATH[] = "-config-dir ~/.config/elinks ";
+    // This won't work outside main()
+    char * ELINKS_COMMAND = strcat(NAKED_ELINKS_COMMAND, ELINKS_CONFIG_PATH);
+
+
+    char search_terms[100];
+    char search_engine[] = "duckduckgo.com/lite";
+    char search_engine_lingo[] = "/?q=";
+
+    // If no args entered, run "elinks"
+    if (argc == 1) {
+        strcat(ELINKS_COMMAND, " 2>/dev/null");
+        system(ELINKS_COMMAND);
+
+        exit(EXIT_SUCCESS);
+    }
+
+    // If flag == help
+    if ((strcmp(FLAG, "-h") == 0) || (strcmp(FLAG, "--help") == 0)){
+        char help_command[30] = "bash bash/help_message.sh ";
+        strcat(help_command, PROGRAM_NAME);
+        system(help_command);
+        exit(EXIT_SUCCESS);
+
+    } else if ((strcmp(FLAG, "-o") == 0) || strcmp(FLAG, "--otter") == 0){
+        strcpy(ELINKS_COMMAND, YOUR_FAVORITE_BROWSER);
+        has_flag = 1;
+        using_gui = 1;
+
+    }
+    // Joining all the arguments into one string.
+    for (int i = 1; i < argc; i++){
+        if (has_flag) i = 2;
+        strcat(search_terms, argv[i]);
+        // Don't add "+" to the last argument
+        if (i != (argc -1)) strcat(search_terms, "+");
+    }
+
+    // If there is a "." in arg1, it's probably a url
+    int start_of_args = 1;
+    if ( has_flag ) start_of_args = 2;
+    int is_url = contains_a_dot(argv[start_of_args], strlen(argv[start_of_args]));
+    if (is_url){
+        if (strlen(argv[start_of_args]) > 49){
+            printf("Your url  was too big");
+            exit(EXIT_FAILURE);
+        }
+        // TODO Otter can only search. Can't use url
+        strcat(ELINKS_COMMAND, argv[start_of_args]);
+        strcat(ELINKS_COMMAND, " 2>/dev/null");
+        if (using_gui) strcat(ELINKS_COMMAND, " &");
+        system(ELINKS_COMMAND);
+
+        exit(EXIT_SUCCESS);
+    }
+
+    // Putting the final url together
+    char final_search_url[250];
+
+    // Got to be a better way
+    strcat(final_search_url, search_engine);
+    strcat(final_search_url, search_engine_lingo);
+    strcat(final_search_url, search_terms);
+    strcat(ELINKS_COMMAND, final_search_url);
+    strcat(ELINKS_COMMAND, " 2>/dev/null");
+
+    if (using_gui == 1) strcat(ELINKS_COMMAND, " &");
+    system(ELINKS_COMMAND);
+    exit(EXIT_SUCCESS);
+    }
+
+// Does the string contain a dot?
+int contains_a_dot(char * string, int str_len){
+    for (int i = 0; i < str_len; i++) 
+        if (string[i] == '.') return TRUE;
+    return FALSE;
+}

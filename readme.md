@@ -14,6 +14,16 @@
 > Look up something from the command line and open the search result in Elinks  
 > E.g. `elinks-search how big is the moon`  
 > For more information, type `./elinks-search --help`    
+# How to Play Videos Using MPV
+![playing videos with mpv gif](./assets/playing-videos-within-elinks.gif)
+> **NOTE: Playing videos or copying urls from duckduckgo.com/lite (default) doesn't seem to work at the moment**
+> You can still use DDG to search. After clicking on a link, then you can play the video.
+>
+> How To:
+>
+> - Go to a video link and press "y"  
+> - Then select "play-video"  
+> - The video looks choppy because its a GIF.
 # (Optional) Dependencies
 > You don't need these applications for Elinks to work. Elinks will just use whatever the default program is on your computer to view files.  
 > If you plan on doing this, then get rid of anything pertaining to "MIME" in the `elinks.conf` file.  

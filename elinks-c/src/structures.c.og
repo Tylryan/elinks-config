@@ -19,5 +19,4 @@ typedef struct {
     int has_flag;
     int use_gui;
     char * final_url;
-    char * alternative_gui_browser;
 } UserEntry;

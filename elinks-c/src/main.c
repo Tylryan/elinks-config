@@ -1,9 +1,6 @@
-#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h> // EXIT_SUCCESS/EXIT_FAILURE
-#include <sysexits.h>
-#include <errno.h>
 
 #include "./functions.c"
 
@@ -15,25 +12,25 @@
 */
 
 // Pretty much never allowed to use constants.
-char YOUR_FAVORITE_BROWSER[] = "otter-browser ";
+char ALTERNATIVE_GUI_BROWSER[] = "otter-browser ";
 char ELINKS_CONFIG_PATH[] = "-config-dir ~/.config/elinks ";
 
 // #######################  MAIN #############################################
 int main(int argc, char *argv[]){
 
-    char * PROGRAM_NAME = argv[0];
+    /* char * PROGRAM_NAME = argv[0]; */
 
     UserEntry user_entry = {
-        // application_binary
-        malloc(25 * sizeof(char)), 
+        // application_binary 25
+        malloc(1 * sizeof(char)), 
         // elinks_config_path
         ELINKS_CONFIG_PATH, 
         // SearchEngine
         duck, 
         // base_search
-        "duckduckgo.com/?q=", 
-        // search_terms
-        malloc(100 * sizeof(char)), 
+        malloc(1 * sizeof(char)), 
+        // search_terms 100
+        malloc(1 * sizeof(char)), 
         // arg_num
         argc, 
         // args
@@ -44,13 +41,10 @@ int main(int argc, char *argv[]){
         0, 
         // use_gui
         0, 
-        // final_url
-        malloc(100 * sizeof(char))
+        // final_url 100
+        malloc(1 * sizeof(char)),
+        ALTERNATIVE_GUI_BROWSER
     };
-    // Default Elinks
-    strcpy(user_entry.application_binary,"elinks ");
-    user_entry.search_engine = duck;
-    /* user_entry.base_search = "duckduckgo.com/?q="; */
 
     int max_args = 20;
     if (user_entry.arg_num > max_args){
@@ -58,33 +52,15 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
-    if (argc == 1) {
-        run_elinks_with_no_args(user_entry);
-        /* free_all_memory(user_entry); */
+    // Don't miss this guy
+    options_parser(&user_entry);
+
+    int entered_no_args = (argc == 1)                   || 
+        (argc == 2 && user_entry.search_engine != duck) ||
+        (argc == 2 && user_entry.use_gui == TRUE);
+    if (entered_no_args) {
+        run_with_no_args(user_entry);
         exit(EXIT_SUCCESS);
-    }
-
-    int needs_help = (
-            (strcmp(user_entry.flag, "-h") == 0) || 
-            (strcmp(user_entry.flag, "--help") == 0)
-            );
-    int wants_gui_browser = (
-            (strcmp(user_entry.flag, "-o") == 0) || 
-            (strcmp(user_entry.flag, "--otter") == 0)
-            );
-
-    if (needs_help){
-        // TODO Stack smashing here
-        print_help_message(PROGRAM_NAME);
-        exit(EXIT_SUCCESS);
-
-    } 
-    if (wants_gui_browser){
-        // TODO Free this
-        user_entry.application_binary = realloc(user_entry.application_binary, 25 * sizeof(char));
-        strcpy(user_entry.application_binary, YOUR_FAVORITE_BROWSER);
-        user_entry.has_flag = 1;
-        user_entry.use_gui = 1;
     }
 
 
@@ -97,14 +73,13 @@ int main(int argc, char *argv[]){
     
     if (is_complete_url){
         run_as_complete_url(user_entry, start_of_args);
-        /* free_all_memory(user_entry); */
 
         exit(EXIT_SUCCESS);
     }
 
     else {
         run_as_search_query(user_entry);
-        /* free_all_memory(user_entry); */
+
         exit(EXIT_SUCCESS);
         }
 
